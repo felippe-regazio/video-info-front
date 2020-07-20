@@ -4,15 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Document</title>
+  <style>
+    main {
+      max-width: 980px;
+      width: 100%;
+      margin: 0 auto;
+    }
+    pre {
+      margin: 20px 0;
+      padding: 16px;
+      background-color: #f1f1f1;
+      overflow: auto;
+    }
+  </style>
 </head>
 <body>
   <br/>
 
-  <label for="file">Add Files</label>
-  <input type="file" multiple>
+  <main>
+    <label for="file">Add Files</label>
+    <input type="file" multiple>
+    
+    <p>This is a test for get video information on the client (including duration) with a promise based function.<br/>
+      With your console opened, add files to the input file and see the performance result on the console.</p>
   
-  <p>This is a test for get video information on the client (including duration) with a promise based function.<br/>
-    With your console opened, add files to the input file and see the performance result on the console.</p>
+    <pre id="result">>> Result <<</pre>
+  </main>
 
   <script>
     document.querySelector('input[type=file]').addEventListener('change', fileInputChanged);
@@ -25,13 +42,16 @@
 
       if (files) {
         getVideoInfo(e.target.files)
-          .then(console.log)
-          .catch(console.error)
+          .then(result => {
+            console.log(result);
+            document.getElementById('result').innerHTML = JSON.stringify(result); 
+          })
           .finally(() => {
             console.log('---------------- PROCESS FINISHED ----------------');
             console.log(performance.memory);
             console.timeEnd();
-          });
+          })
+          .catch(console.error);
       }
     }
     
@@ -47,7 +67,6 @@
       files.forEach(file => {
         const p = new Promise((resolve, reject) => {
           const dynamicURL = URL.createObjectURL(file);
-          const audioTag = document.createElement('audio');
                   
           const sec2time = timeInSeconds => {
             const pad = (num, size) => ('000' + num).slice(size * -1);
