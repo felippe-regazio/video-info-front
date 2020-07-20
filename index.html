@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+</head>
+<body>
+  <br/>
+
+  <label for="file">Add Files</label>
+  <input type="file" multiple>
+  
+  <p>This is a test for get video information on the client (including duration) with a promise based function.<br/>
+    With your console opened, add files to the input file and see the performance result on the console.</p>
+
+  <script>
+    document.querySelector('input[type=file]').addEventListener('change', fileInputChanged);
+
+    function fileInputChanged (e) {
+      console.log('---------------- PROCESS STARTED ----------------');
+      console.time();
+      console.log(performance.memory);
+      const files = e.target.files;
+
+      if (files) {
+        getVideoInfo(e.target.files)
+          .then(console.log)
+          .catch(console.error)
+          .finally(() => {
+            console.log('---------------- PROCESS FINISHED ----------------');
+            console.log(performance.memory);
+            console.timeEnd();
+          });
+      }
+    }
+    
+    function getVideoInfo (files = []) {
+      const promises = [];
+      
+      files = Array.from(files);
+
+      if (!files.length) {
+        return [];
+      }
+
+      files.forEach(file => {
+        const p = new Promise((resolve, reject) => {
+          const dynamicURL = URL.createObjectURL(file);
+          const audioTag = document.createElement('audio');
+                  
+          const sec2time = timeInSeconds => {
+            const pad = (num, size) => ('000' + num).slice(size * -1);
+            const time = parseFloat(timeInSeconds).toFixed(3);
+            
+            return [
+              Math.floor(time / 60 / 60),
+              Math.floor(time / 60) % 60,
+              Math.floor(time - (Math.floor(time / 60) % 60) * 60),
+            ].map(t => pad(t, 2)).join(':');
+          }
+
+          const formatBytes = (bytes, decimals = 2) => {
+            if (bytes === 0) return '0 Bytes';
+            
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+          }        
+
+          if (dynamicURL) {
+            new Audio(dynamicURL).addEventListener('canplaythrough', function(e) {
+              
+              if (this.error) {
+                reject({ error: true, code: this.error.code, message: this.error.message });
+              }
+              
+              const information = ({
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                duration: this.duration,
+                formatedTime: sec2time(this.duration),
+                formatedSize: formatBytes(file.size)
+              });
+
+              URL.revokeObjectURL(dynamicURL);
+              resolve(information);
+            });
+          } else {
+            reject({ error: true, code: 0, message: 'Could not create the File Dynamic URL' });
+          }
+        });
+
+        promises.push(p);
+      });      
+
+      console.log('---------------- PROMISES CREATED ----------------');
+      console.log(performance.memory);
+      return Promise.all(promises); 
+    }
+  </script>
+</body>
+</html>
